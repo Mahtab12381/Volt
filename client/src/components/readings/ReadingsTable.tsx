@@ -21,7 +21,7 @@ export function ReadingsTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border-hairline text-left text-xs uppercase tracking-wide text-ink-muted">
-            <th className="px-4 py-3 font-medium">Date &amp; time</th>
+            <th className="px-4 py-3 font-medium whitespace-nowrap">Date &amp; time</th>
             <th className="px-4 py-3 font-medium">Balance</th>
             <th className="px-4 py-3 font-medium">Change</th>
             <th className="px-4 py-3 font-medium">Note</th>
@@ -37,7 +37,7 @@ export function ReadingsTable({
 
             return (
               <tr key={getReadingId(reading)} className="border-b border-border-hairline last:border-0">
-                <td className="px-4 py-3 text-ink-primary">{formatDateTime(reading.timestamp)}</td>
+                <td className="px-4 py-3 text-ink-primary whitespace-nowrap">{formatDateTime(reading.timestamp)}</td>
                 <td className="px-4 py-3 tabular-nums text-ink-primary">{formatTk(reading.balanceTk)}</td>
                 <td className="px-4 py-3">
                   {isRechargeRow ? (
