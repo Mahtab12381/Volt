@@ -10,7 +10,7 @@ export function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-border-hairline bg-surface-card p-5">
+    <div className="rounded-xl border border-border-hairline bg-surface-card p-4 sm:p-5">
       <div className="mb-4 flex items-start justify-between gap-2">
         <div>
           <h3 className="text-sm font-semibold text-ink-primary">{title}</h3>

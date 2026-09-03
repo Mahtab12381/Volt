@@ -21,7 +21,7 @@ export function ReadingsPage() {
     <div className="mx-auto max-w-5xl">
       <PageHeader title="Readings" subtitle="Log a new meter balance reading, or edit/delete past entries." />
 
-      <section className="mb-8 rounded-xl border border-border-hairline bg-surface-card p-5">
+      <section className="mb-8 rounded-xl border border-border-hairline bg-surface-card p-4 sm:p-5">
         <h2 className="mb-4 text-sm font-semibold text-ink-primary">Add a reading</h2>
         <ReadingForm
           submitLabel="Add reading"

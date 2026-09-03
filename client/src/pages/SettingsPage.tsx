@@ -43,7 +43,7 @@ export function SettingsPage() {
         <p className="text-sm text-ink-muted">Loading…</p>
       ) : (
         <div className="flex flex-col gap-8">
-          <section className="rounded-xl border border-border-hairline bg-surface-card p-5">
+          <section className="rounded-xl border border-border-hairline bg-surface-card p-4 sm:p-5">
             <h2 className="mb-4 text-sm font-semibold text-ink-primary">Default graph unit</h2>
             <DisplayModeForm
               settings={settings}
@@ -52,7 +52,7 @@ export function SettingsPage() {
             />
           </section>
 
-          <section className="rounded-xl border border-border-hairline bg-surface-card p-5">
+          <section className="rounded-xl border border-border-hairline bg-surface-card p-4 sm:p-5">
             <h2 className="mb-4 text-sm font-semibold text-ink-primary">Monthly budget</h2>
             <BudgetForm
               settings={settings}
@@ -61,7 +61,7 @@ export function SettingsPage() {
             />
           </section>
 
-          <section className="rounded-xl border border-border-hairline bg-surface-card p-5">
+          <section className="rounded-xl border border-border-hairline bg-surface-card p-4 sm:p-5">
             <h2 className="mb-4 text-sm font-semibold text-ink-primary">Tariff slabs</h2>
             <SlabConfigEditor
               settings={settings}
@@ -70,7 +70,7 @@ export function SettingsPage() {
             />
           </section>
 
-          <section className="rounded-xl border border-border-hairline bg-surface-card p-5">
+          <section className="rounded-xl border border-border-hairline bg-surface-card p-4 sm:p-5">
             <h2 className="mb-4 text-sm font-semibold text-ink-primary">Fixed charges</h2>
             <FixedChargesForm
               settings={settings}
@@ -79,7 +79,7 @@ export function SettingsPage() {
             />
           </section>
 
-          <section className="rounded-xl border border-border-hairline bg-surface-card p-5">
+          <section className="rounded-xl border border-border-hairline bg-surface-card p-4 sm:p-5">
             <h2 className="mb-4 text-sm font-semibold text-ink-primary">Day / night window</h2>
             <DayWindowForm
               settings={settings}
@@ -88,7 +88,7 @@ export function SettingsPage() {
             />
           </section>
 
-          <section className="rounded-xl border border-border-hairline bg-surface-card p-5">
+          <section className="rounded-xl border border-border-hairline bg-surface-card p-4 sm:p-5">
             <h2 className="mb-2 text-sm font-semibold text-ink-primary">Recalculate all data</h2>
             <p className="mb-4 text-sm text-ink-secondary">
               After changing a tariff rate, run this to reprice all historical readings against the new configuration.

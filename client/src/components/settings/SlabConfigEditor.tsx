@@ -89,24 +89,28 @@ export function SlabConfigEditor({
       <div>
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">Standard slab ladder</h3>
         <div className="flex flex-col gap-2">
-          <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 text-xs text-ink-muted">
+          <div className="hidden gap-2 text-xs text-ink-muted sm:grid sm:grid-cols-[1fr_1fr_1fr_auto]">
             <span>Min kWh</span>
             <span>Max kWh (blank = open-ended)</span>
             <span>Rate (Tk/kWh)</span>
             <span />
           </div>
           {draft.standardSlabs.map((row, i) => (
-            <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2">
+            <div
+              key={i}
+              className="grid grid-cols-2 gap-2 rounded-lg border border-border-hairline p-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-center sm:border-0 sm:p-0"
+            >
               <input
                 type="number"
                 value={row.minKwh}
+                placeholder="Min kWh"
                 onChange={(e) => updateSlabRow(i, 'minKwh', e.target.value)}
                 className="rounded-lg border border-border-hairline bg-[var(--surface-2)] px-3 py-2 text-sm text-ink-primary tabular-nums outline-none focus:border-[var(--series-1)]"
               />
               <input
                 type="number"
                 value={row.maxKwh}
-                placeholder="open-ended"
+                placeholder="Max kWh (open-ended)"
                 onChange={(e) => updateSlabRow(i, 'maxKwh', e.target.value)}
                 className="rounded-lg border border-border-hairline bg-[var(--surface-2)] px-3 py-2 text-sm text-ink-primary tabular-nums outline-none focus:border-[var(--series-1)]"
               />
@@ -114,16 +118,17 @@ export function SlabConfigEditor({
                 type="number"
                 step="0.01"
                 value={row.rateTkPerKwh}
+                placeholder="Rate (Tk/kWh)"
                 onChange={(e) => updateSlabRow(i, 'rateTkPerKwh', e.target.value)}
-                className="rounded-lg border border-border-hairline bg-[var(--surface-2)] px-3 py-2 text-sm text-ink-primary tabular-nums outline-none focus:border-[var(--series-1)]"
+                className="col-span-2 rounded-lg border border-border-hairline bg-[var(--surface-2)] px-3 py-2 text-sm text-ink-primary tabular-nums outline-none focus:border-[var(--series-1)] sm:col-auto"
               />
               <button
                 type="button"
                 onClick={() => removeRow(i)}
-                className="rounded-lg px-2 text-sm text-ink-muted hover:bg-[var(--surface-hover)] hover:text-ink-primary"
+                className="col-span-2 justify-self-end rounded-lg px-2 text-sm text-ink-muted hover:bg-[var(--surface-hover)] hover:text-ink-primary sm:col-auto sm:justify-self-auto"
                 aria-label="Remove slab"
               >
-                ✕
+                ✕ Remove
               </button>
             </div>
           ))}
