@@ -1,14 +1,18 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import type { DayNightResponse } from '@electricity/shared';
+import type { DayNightResponse, UnitMode } from '@electricity/shared';
 import { ChartCard } from './ChartCard.js';
 import { ChartLegend } from './ChartLegend.js';
 import { ChartTooltip, fromRechartsPayload } from './ChartTooltip.js';
 import { CHART_CHROME, SERIES } from '../../utils/chartColors.js';
-import { formatDate, formatKwh } from '../../utils/formatters.js';
+import { formatDate, formatKwh, formatTk } from '../../utils/formatters.js';
 
-export function DayNightComparisonChart({ data }: { data: DayNightResponse }) {
+export function DayNightComparisonChart({ data, unit }: { data: DayNightResponse; unit: UnitMode }) {
+  const dayKey = unit === 'kwh' ? 'dayKwh' : 'dayTk';
+  const nightKey = unit === 'kwh' ? 'nightKwh' : 'nightTk';
+  const formatValue = unit === 'kwh' ? formatKwh : formatTk;
+
   return (
-    <ChartCard title="Day vs. night usage" subtitle="Day = 7am–7pm, Night = 7pm–7am">
+    <ChartCard title={`Day vs. night ${unit === 'kwh' ? 'usage' : 'spend'}`} subtitle="Day = 7am–7pm, Night = 7pm–7am">
       <ChartLegend
         items={[
           { label: 'Day', color: SERIES.blue },
@@ -24,16 +28,11 @@ export function DayNightComparisonChart({ data }: { data: DayNightResponse }) {
             <Tooltip
               cursor={{ fill: 'var(--surface-hover)' }}
               content={({ active, label, payload }) => (
-                <ChartTooltip
-                  active={active}
-                  label={label ? formatDate(label) : undefined}
-                  entries={fromRechartsPayload(payload)}
-                  formatValue={(v) => formatKwh(v)}
-                />
+                <ChartTooltip active={active} label={label ? formatDate(label) : undefined} entries={fromRechartsPayload(payload)} formatValue={formatValue} />
               )}
             />
-            <Bar dataKey="dayKwh" name="Day" fill={SERIES.blue} radius={[4, 4, 0, 0]} maxBarSize={16} />
-            <Bar dataKey="nightKwh" name="Night" fill={SERIES.orange} radius={[4, 4, 0, 0]} maxBarSize={16} />
+            <Bar dataKey={dayKey} name="Day" fill={SERIES.blue} radius={[4, 4, 0, 0]} maxBarSize={16} />
+            <Bar dataKey={nightKey} name="Night" fill={SERIES.orange} radius={[4, 4, 0, 0]} maxBarSize={16} />
           </BarChart>
         </ResponsiveContainer>
       </div>

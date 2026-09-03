@@ -1,6 +1,48 @@
-import type { SlabBand, SlabConversionResult, SlabSegmentResult } from './types.js';
+import type { LifelineSlabConfig, SlabBand, SlabConversionResult, SlabSegmentResult } from './types.js';
 
 const EPSILON = 1e-9;
+
+export interface CurrentSlabInfo {
+  track: 'lifeline' | 'standard';
+  label: string;
+  minKwh: number;
+  maxKwh: number | null;
+  rateTkPerKwh: number;
+}
+
+/**
+ * Finds which slab band the current cumulative-kWh-this-month falls into,
+ * for display purposes (e.g. "you're currently in the 76-200 kWh band at
+ * Tk 8.50/kWh"). Mirrors the same upper-bound-only matching rule used by
+ * tkToKwhWithSlabs/kwhToTkWithSlabs.
+ */
+export function findCurrentSlab(
+  cumulativeKwh: number,
+  lifelineEligible: boolean,
+  lifelineSlab: LifelineSlabConfig,
+  standardSlabs: SlabBand[],
+): CurrentSlabInfo {
+  if (lifelineEligible) {
+    return {
+      track: 'lifeline',
+      label: `0-${lifelineSlab.thresholdKwh} kWh (lifeline)`,
+      minKwh: 0,
+      maxKwh: lifelineSlab.thresholdKwh,
+      rateTkPerKwh: lifelineSlab.rateTkPerKwh,
+    };
+  }
+
+  const sorted = [...standardSlabs].sort((a, b) => a.minKwh - b.minKwh);
+  const slab = sorted.find((s) => cumulativeKwh < (s.maxKwh ?? Infinity) - EPSILON) ?? sorted[sorted.length - 1];
+
+  return {
+    track: 'standard',
+    label: slab.label,
+    minKwh: slab.minKwh,
+    maxKwh: slab.maxKwh,
+    rateTkPerKwh: slab.rateTkPerKwh,
+  };
+}
 
 /**
  * Converts a Tk deduction into kWh using a slab-rate ladder, given the

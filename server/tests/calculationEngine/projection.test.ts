@@ -10,7 +10,6 @@ const baseConfig = {
   meterRentTk: 40,
   vatPercent: 5,
   rebatePercent: 0.5,
-  lifelineWarningMarginKwh: 10,
 };
 
 describe('projectMonth', () => {
@@ -24,18 +23,6 @@ describe('projectMonth', () => {
     // 5 + 1*27 = 32 kWh, all within lifeline @4.63
     expect(result.projectedTotalKwh).toBeCloseTo(32, 6);
     expect(result.energyCost).toBeCloseTo(32 * 4.63, 4);
-    expect(result.lifelineAtRisk).toBe(false);
-  });
-
-  it('flags lifelineAtRisk when projection lands close to the 50 kWh threshold', () => {
-    const result = projectMonth({
-      cumulativeKwhSoFar: 10,
-      recentDailyKwh: [2, 2, 2],
-      daysRemainingInMonth: 15, // 10 + 30 = 40 kWh -> within margin of 50
-      config: baseConfig,
-    });
-    expect(result.projectedTotalKwh).toBeCloseTo(40, 6);
-    expect(result.lifelineAtRisk).toBe(true);
   });
 
   it('reprices the whole projected total under the standard ladder once it exceeds the lifeline threshold', () => {

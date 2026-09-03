@@ -14,6 +14,8 @@ export interface DayWindow {
   endHour: number; // e.g. 19
 }
 
+export type UnitMode = 'kwh' | 'tk';
+
 export interface AppSettings {
   lifelineSlab: LifelineSlab;
   standardSlabs: StandardSlabBand[];
@@ -23,7 +25,9 @@ export interface AppSettings {
   vatPercent: number;
   rebatePercent: number;
   dayWindow: DayWindow;
-  lifelineWarningMarginKwh: number; // e.g. 10 -> warn between 40-50 kWh
+  monthlyBudgetTk: number; // 0 = no budget set. Drives the dashboard's budget status badge.
+  budgetAtRiskFraction: number; // e.g. 0.9 -> "at risk" once projected spend hits 90% of budget
+  defaultUnitMode: UnitMode; // default unit for the dashboard's graph unit toggle
   updatedAt: string;
 }
 

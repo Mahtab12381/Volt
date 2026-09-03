@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { PageHeader } from '../components/layout/PageHeader.js';
 import { SlabConfigEditor } from '../components/settings/SlabConfigEditor.js';
 import { FixedChargesForm } from '../components/settings/FixedChargesForm.js';
+import { DayWindowForm } from '../components/settings/DayWindowForm.js';
+import { BudgetForm } from '../components/settings/BudgetForm.js';
+import { DisplayModeForm } from '../components/settings/DisplayModeForm.js';
 import { useSettings, useUpdateSettings } from '../hooks/useSettings.js';
 import { readingsApi } from '../api/readings.api.js';
 import { STATUS } from '../utils/chartColors.js';
@@ -32,8 +35,7 @@ export function SettingsPage() {
           against DESCO's published tariff page before relying on these figures. This app also doesn't version rate changes
           over time: editing a rate here and recalculating applies it to <em>all</em> historical data, so past months'
           figures may shift. The lifeline (0–50 kWh) rate is retroactive in real DESCO billing — if a month's usage ever
-          crosses 50 kWh, the whole month is repriced from the next slab, which this app models, but the "at risk" and
-          "on track" badges are still best-effort estimates until the month closes.
+          crosses 50 kWh, the whole month is repriced from the next slab, which this app models automatically.
         </p>
       </div>
 
@@ -41,6 +43,24 @@ export function SettingsPage() {
         <p className="text-sm text-ink-muted">Loading…</p>
       ) : (
         <div className="flex flex-col gap-8">
+          <section className="rounded-xl border border-border-hairline bg-surface-card p-5">
+            <h2 className="mb-4 text-sm font-semibold text-ink-primary">Default graph unit</h2>
+            <DisplayModeForm
+              settings={settings}
+              isSaving={updateSettings.isPending}
+              onSave={(update) => updateSettings.mutate(update)}
+            />
+          </section>
+
+          <section className="rounded-xl border border-border-hairline bg-surface-card p-5">
+            <h2 className="mb-4 text-sm font-semibold text-ink-primary">Monthly budget</h2>
+            <BudgetForm
+              settings={settings}
+              isSaving={updateSettings.isPending}
+              onSave={(update) => updateSettings.mutate(update)}
+            />
+          </section>
+
           <section className="rounded-xl border border-border-hairline bg-surface-card p-5">
             <h2 className="mb-4 text-sm font-semibold text-ink-primary">Tariff slabs</h2>
             <SlabConfigEditor
@@ -51,8 +71,17 @@ export function SettingsPage() {
           </section>
 
           <section className="rounded-xl border border-border-hairline bg-surface-card p-5">
-            <h2 className="mb-4 text-sm font-semibold text-ink-primary">Fixed charges &amp; day window</h2>
+            <h2 className="mb-4 text-sm font-semibold text-ink-primary">Fixed charges</h2>
             <FixedChargesForm
+              settings={settings}
+              isSaving={updateSettings.isPending}
+              onSave={(update) => updateSettings.mutate(update)}
+            />
+          </section>
+
+          <section className="rounded-xl border border-border-hairline bg-surface-card p-5">
+            <h2 className="mb-4 text-sm font-semibold text-ink-primary">Day / night window</h2>
+            <DayWindowForm
               settings={settings}
               isSaving={updateSettings.isPending}
               onSave={(update) => updateSettings.mutate(update)}

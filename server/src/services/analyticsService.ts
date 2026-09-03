@@ -10,7 +10,7 @@ import {
   totalDayNight,
   type DailyAgg,
 } from './calculationEngine/intervalSplitter.js';
-import { kwhToTkWithSlabs } from './calculationEngine/slabConversion.js';
+import { findCurrentSlab, kwhToTkWithSlabs } from './calculationEngine/slabConversion.js';
 import { projectMonth } from './calculationEngine/projection.js';
 import { bdDateKey, bdDayOfMonth, bdDaysInMonth, bdMonthKey } from './calculationEngine/time.js';
 import type { AtomicSegment } from './calculationEngine/types.js';
@@ -101,7 +101,13 @@ export async function getDayNight(from?: Date, to?: Date) {
   const byDay = groupByDay(segments, settings.dayWindow);
   return {
     totals,
-    byDay: sortedDaily(byDay).map((d) => ({ date: d.date, dayKwh: d.dayKwh, nightKwh: d.nightKwh })),
+    byDay: sortedDaily(byDay).map((d) => ({
+      date: d.date,
+      dayKwh: d.dayKwh,
+      nightKwh: d.nightKwh,
+      dayTk: d.dayTk,
+      nightTk: d.nightTk,
+    })),
   };
 }
 
@@ -131,10 +137,26 @@ async function buildProjectionInput(monthKey: string) {
     meterRentTk: settings.meterRentTk,
     vatPercent: settings.vatPercent,
     rebatePercent: settings.rebatePercent,
-    lifelineWarningMarginKwh: settings.lifelineWarningMarginKwh,
   };
 
-  return { cumulativeKwhSoFar, recentDailyKwh, daysRemainingInMonth, daysElapsed, daysInMonth, config, state, byDay };
+  return { cumulativeKwhSoFar, recentDailyKwh, daysRemainingInMonth, daysElapsed, daysInMonth, config, state, byDay, settings };
+}
+
+export type BudgetStatus = 'not_set' | 'on_track' | 'at_risk' | 'over_budget';
+
+export function computeBudgetStatus(
+  projectedMonthlyBillTk: number,
+  monthlyBudgetTk: number,
+  atRiskFraction: number,
+): { budgetStatus: BudgetStatus; budgetUsedPercent: number | null } {
+  if (monthlyBudgetTk <= 0) {
+    return { budgetStatus: 'not_set', budgetUsedPercent: null };
+  }
+  const usedFraction = projectedMonthlyBillTk / monthlyBudgetTk;
+  const budgetUsedPercent = usedFraction * 100;
+  if (usedFraction > 1) return { budgetStatus: 'over_budget', budgetUsedPercent };
+  if (usedFraction >= atRiskFraction) return { budgetStatus: 'at_risk', budgetUsedPercent };
+  return { budgetStatus: 'on_track', budgetUsedPercent };
 }
 
 export async function getProjection(monthKey: string) {
@@ -143,7 +165,7 @@ export async function getProjection(monthKey: string) {
 }
 
 export async function getSummary(monthKey: string) {
-  const { cumulativeKwhSoFar, recentDailyKwh, daysRemainingInMonth, daysElapsed, state, config } =
+  const { cumulativeKwhSoFar, recentDailyKwh, daysRemainingInMonth, daysElapsed, state, config, settings } =
     await buildProjectionInput(monthKey);
 
   const projection = projectMonth({ cumulativeKwhSoFar, recentDailyKwh, daysRemainingInMonth, config });
@@ -156,6 +178,23 @@ export async function getSummary(monthKey: string) {
   const currentBalanceTk = latestReading?.balanceTk ?? 0;
   const estimatedDaysUntilExhaustion = avgDailyTk > 0 ? currentBalanceTk / avgDailyTk : null;
 
+  const { budgetStatus, budgetUsedPercent } = computeBudgetStatus(
+    projection.totalEstimate,
+    settings.monthlyBudgetTk,
+    settings.budgetAtRiskFraction,
+  );
+
+  // The slab your projected month-end total would land in, not the slab
+  // you're literally in today — mirrors the same forward-looking track
+  // decision projectMonth() makes when pricing projection.totalEstimate.
+  const projectedLifelineEligible = projection.projectedTotalKwh <= settings.lifelineSlab.thresholdKwh;
+  const projectedSlab = findCurrentSlab(
+    projection.projectedTotalKwh,
+    projectedLifelineEligible,
+    settings.lifelineSlab,
+    config.standardSlabs,
+  );
+
   return {
     currentBalanceTk,
     cumulativeKwhThisMonth: cumulativeKwhSoFar,
@@ -163,11 +202,14 @@ export async function getSummary(monthKey: string) {
     projectedMonthlyKwh: projection.projectedTotalKwh,
     projectedMonthlyBillTk: projection.totalEstimate,
     lifelineEligible: state?.lifelineEligible ?? true,
-    lifelineAtRisk: projection.lifelineAtRisk,
     daysElapsed,
     daysRemaining: daysRemainingInMonth,
     avgDailyKwh,
     estimatedDaysUntilExhaustion,
+    monthlyBudgetTk: settings.monthlyBudgetTk,
+    budgetStatus,
+    budgetUsedPercent,
+    projectedSlab,
   };
 }
 

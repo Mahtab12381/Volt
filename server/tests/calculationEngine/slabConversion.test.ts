@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { kwhToTkWithSlabs, tkToKwhWithSlabs } from '../../src/services/calculationEngine/slabConversion.js';
-import { STANDARD_SLABS } from './fixtures/sampleReadings.js';
+import { findCurrentSlab, kwhToTkWithSlabs, tkToKwhWithSlabs } from '../../src/services/calculationEngine/slabConversion.js';
+import { LIFELINE_SLAB, STANDARD_SLABS } from './fixtures/sampleReadings.js';
 
 describe('tkToKwhWithSlabs', () => {
   it('stays within a single slab when the deduction does not cross a boundary', () => {
@@ -52,5 +52,33 @@ describe('kwhToTkWithSlabs', () => {
   it('sums cost correctly across a slab-crossing amount', () => {
     const tk = kwhToTkWithSlabs(195, 6.923077, STANDARD_SLABS);
     expect(tk).toBeCloseTo(60, 3);
+  });
+});
+
+describe('findCurrentSlab', () => {
+  it('returns the lifeline band when the month is still lifeline-eligible', () => {
+    const slab = findCurrentSlab(13.21, true, LIFELINE_SLAB, STANDARD_SLABS);
+    expect(slab.track).toBe('lifeline');
+    expect(slab.minKwh).toBe(0);
+    expect(slab.maxKwh).toBe(50);
+    expect(slab.rateTkPerKwh).toBe(4.63);
+  });
+
+  it('finds the correct standard band once off the lifeline track', () => {
+    const slab = findCurrentSlab(150, false, LIFELINE_SLAB, STANDARD_SLABS);
+    expect(slab.track).toBe('standard');
+    expect(slab.label).toBe('76-200');
+    expect(slab.rateTkPerKwh).toBe(8.5);
+  });
+
+  it('matches exactly at a slab boundary using the upper-bound-only rule', () => {
+    const slab = findCurrentSlab(200, false, LIFELINE_SLAB, STANDARD_SLABS);
+    expect(slab.label).toBe('201-300');
+  });
+
+  it('falls back to the open-ended top slab beyond the last band', () => {
+    const slab = findCurrentSlab(10000, false, LIFELINE_SLAB, STANDARD_SLABS);
+    expect(slab.label).toBe('601+');
+    expect(slab.maxKwh).toBeNull();
   });
 });

@@ -79,6 +79,8 @@ export interface DailyAgg {
   tk: number;
   dayKwh: number;
   nightKwh: number;
+  dayTk: number;
+  nightTk: number;
 }
 
 export function groupByDay(segments: AtomicSegment[], dayWindow: DayWindow): Map<string, DailyAgg> {
@@ -87,13 +89,18 @@ export function groupByDay(segments: AtomicSegment[], dayWindow: DayWindow): Map
   for (const seg of segments) {
     for (const piece of splitAtMidnight(seg)) {
       const date = bdDateKey(piece.fromTimestamp);
-      const existing = days.get(date) ?? { date, kwh: 0, tk: 0, dayKwh: 0, nightKwh: 0 };
+      const existing = days.get(date) ?? { date, kwh: 0, tk: 0, dayKwh: 0, nightKwh: 0, dayTk: 0, nightTk: 0 };
       existing.kwh += piece.kwh;
       existing.tk += piece.tk;
 
       for (const dnPiece of splitAtDayNight(piece, dayWindow)) {
-        if (isBdDaytime(dnPiece.fromTimestamp, dayWindow)) existing.dayKwh += dnPiece.kwh;
-        else existing.nightKwh += dnPiece.kwh;
+        if (isBdDaytime(dnPiece.fromTimestamp, dayWindow)) {
+          existing.dayKwh += dnPiece.kwh;
+          existing.dayTk += dnPiece.tk;
+        } else {
+          existing.nightKwh += dnPiece.kwh;
+          existing.nightTk += dnPiece.tk;
+        }
       }
 
       days.set(date, existing);

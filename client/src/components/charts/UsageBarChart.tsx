@@ -2,23 +2,26 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { ChartCard } from './ChartCard.js';
 import { ChartTooltip, fromRechartsPayload } from './ChartTooltip.js';
 import { CHART_CHROME, SERIES } from '../../utils/chartColors.js';
-import { formatKwh } from '../../utils/formatters.js';
 
 export interface UsageBarPoint {
   key: string;
-  kwh: number;
+  value: number;
 }
 
 export function UsageBarChart({
   title,
   subtitle,
   data,
+  seriesName,
+  formatValue,
   tickFormatter,
   tooltipLabelFormatter,
 }: {
   title: string;
   subtitle?: string;
   data: UsageBarPoint[];
+  seriesName: string;
+  formatValue: (value: number) => string;
   tickFormatter: (key: string) => string;
   tooltipLabelFormatter?: (key: string) => string;
 }) {
@@ -36,12 +39,12 @@ export function UsageBarChart({
                 <ChartTooltip
                   active={active}
                   label={label ? (tooltipLabelFormatter ?? tickFormatter)(label) : undefined}
-                  entries={fromRechartsPayload(payload).map((e) => ({ ...e, name: 'Usage' }))}
-                  formatValue={(v) => formatKwh(v)}
+                  entries={fromRechartsPayload(payload).map((e) => ({ ...e, name: seriesName }))}
+                  formatValue={formatValue}
                 />
               )}
             />
-            <Bar dataKey="kwh" fill={SERIES.blue} radius={[4, 4, 0, 0]} maxBarSize={28} />
+            <Bar dataKey="value" fill={SERIES.blue} radius={[4, 4, 0, 0]} maxBarSize={28} />
           </BarChart>
         </ResponsiveContainer>
       </div>

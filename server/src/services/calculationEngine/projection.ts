@@ -9,7 +9,6 @@ export interface ProjectionConfig {
   meterRentTk: number;
   vatPercent: number;
   rebatePercent: number;
-  lifelineWarningMarginKwh: number;
 }
 
 export interface ProjectionResult {
@@ -22,7 +21,6 @@ export interface ProjectionResult {
   totalEstimate: number;
   methodology: string;
   isEstimate: true;
-  lifelineAtRisk: boolean;
 }
 
 /**
@@ -55,10 +53,6 @@ export function projectMonth(params: {
   const demandCharge = config.demandChargeTkPerKw * config.sanctionedLoadKw;
   const totalEstimate = energyAfterRebate + vatAmount + demandCharge + config.meterRentTk;
 
-  const lifelineAtRisk =
-    projectedTotalKwh >= config.lifelineSlab.thresholdKwh - config.lifelineWarningMarginKwh &&
-    projectedTotalKwh <= config.lifelineSlab.thresholdKwh;
-
   return {
     projectedTotalKwh,
     energyCost,
@@ -69,6 +63,5 @@ export function projectMonth(params: {
     totalEstimate,
     methodology: `${windowDays}-day rolling average`,
     isEstimate: true,
-    lifelineAtRisk,
   };
 }

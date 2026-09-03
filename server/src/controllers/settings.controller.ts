@@ -17,7 +17,9 @@ const settingsSchema = z.object({
   vatPercent: z.number().min(0).optional(),
   rebatePercent: z.number().min(0).optional(),
   dayWindow: z.object({ startHour: z.number().min(0).max(23), endHour: z.number().min(0).max(23) }).optional(),
-  lifelineWarningMarginKwh: z.number().min(0).optional(),
+  monthlyBudgetTk: z.number().min(0).optional(),
+  budgetAtRiskFraction: z.number().min(0).max(1).optional(),
+  defaultUnitMode: z.enum(['kwh', 'tk']).optional(),
 });
 
 export async function getSettings(_req: Request, res: Response) {

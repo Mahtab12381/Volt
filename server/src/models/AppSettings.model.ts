@@ -26,7 +26,9 @@ const appSettingsSchema = new Schema(
       startHour: { type: Number, required: true, default: 7 },
       endHour: { type: Number, required: true, default: 19 },
     },
-    lifelineWarningMarginKwh: { type: Number, required: true, default: 10 },
+    monthlyBudgetTk: { type: Number, required: true, default: 0 },
+    budgetAtRiskFraction: { type: Number, required: true, default: 0.9 },
+    defaultUnitMode: { type: String, enum: ['kwh', 'tk'], required: true, default: 'kwh' },
   },
   { timestamps: true, _id: false },
 );
@@ -46,7 +48,9 @@ export interface AppSettingsData {
   vatPercent: number;
   rebatePercent: number;
   dayWindow: { startHour: number; endHour: number };
-  lifelineWarningMarginKwh: number;
+  monthlyBudgetTk: number;
+  budgetAtRiskFraction: number;
+  defaultUnitMode: 'kwh' | 'tk';
 }
 
 export const DEFAULT_SETTINGS: AppSettingsData = {
@@ -66,7 +70,9 @@ export const DEFAULT_SETTINGS: AppSettingsData = {
   vatPercent: 5,
   rebatePercent: 0.5,
   dayWindow: { startHour: 7, endHour: 19 },
-  lifelineWarningMarginKwh: 10,
+  monthlyBudgetTk: 0,
+  budgetAtRiskFraction: 0.9,
+  defaultUnitMode: 'kwh',
 };
 
 export async function ensureDefaultSettings(): Promise<void> {
@@ -75,4 +81,14 @@ export async function ensureDefaultSettings(): Promise<void> {
     { $setOnInsert: DEFAULT_SETTINGS },
     { upsert: true, new: true },
   );
+
+  // Backfill top-level fields added to the schema after a settings document
+  // already existed — $setOnInsert above only fires for brand-new documents.
+  for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
+    if (key === '_id') continue;
+    await AppSettingsModel.updateOne({ _id: 'singleton', [key]: { $exists: false } }, { $set: { [key]: value } });
+  }
+
+  // Drop fields retired from the schema so they don't linger in .lean() reads.
+  await AppSettingsModel.updateOne({ _id: 'singleton' }, { $unset: { lifelineWarningMarginKwh: '' } });
 }

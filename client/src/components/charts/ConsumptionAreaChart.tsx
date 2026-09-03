@@ -1,19 +1,23 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import type { DailyPoint } from '@electricity/shared';
+import type { DailyPoint, UnitMode } from '@electricity/shared';
 import { ChartCard } from './ChartCard.js';
 import { ChartTooltip, fromRechartsPayload } from './ChartTooltip.js';
 import { CHART_CHROME, SERIES } from '../../utils/chartColors.js';
-import { formatDate, formatKwh } from '../../utils/formatters.js';
+import { formatDate, formatKwh, formatTk } from '../../utils/formatters.js';
 
-export function ConsumptionAreaChart({ points }: { points: DailyPoint[] }) {
+export function ConsumptionAreaChart({ points, unit }: { points: DailyPoint[]; unit: UnitMode }) {
   let cumulative = 0;
   const data = points.map((p) => {
-    cumulative += p.kwh;
-    return { date: p.date, cumulativeKwh: cumulative };
+    cumulative += unit === 'kwh' ? p.kwh : p.tk;
+    return { date: p.date, cumulative };
   });
+  const formatValue = unit === 'kwh' ? formatKwh : formatTk;
 
   return (
-    <ChartCard title="Cumulative consumption this month" subtitle="Running total kWh — resets at the start of each month">
+    <ChartCard
+      title={unit === 'kwh' ? 'Cumulative consumption this month' : 'Cumulative spend this month'}
+      subtitle={`Running total ${unit === 'kwh' ? 'kWh' : 'Tk'} — resets at the start of each month`}
+    >
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -32,11 +36,11 @@ export function ConsumptionAreaChart({ points }: { points: DailyPoint[] }) {
                   active={active}
                   label={label ? formatDate(label) : undefined}
                   entries={fromRechartsPayload(payload).map((e) => ({ ...e, name: 'Cumulative' }))}
-                  formatValue={(v) => formatKwh(v)}
+                  formatValue={formatValue}
                 />
               )}
             />
-            <Area type="monotone" dataKey="cumulativeKwh" stroke={SERIES.blue} strokeWidth={2} fill="url(#cumulativeFill)" />
+            <Area type="monotone" dataKey="cumulative" stroke={SERIES.blue} strokeWidth={2} fill="url(#cumulativeFill)" />
           </AreaChart>
         </ResponsiveContainer>
       </div>

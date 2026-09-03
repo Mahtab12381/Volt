@@ -1,10 +1,7 @@
 import { useState } from 'react';
 import type { AppSettings, UpdateSettingsInput } from '@electricity/shared';
 
-type Draft = Record<
-  'demandChargeTkPerKw' | 'sanctionedLoadKw' | 'meterRentTk' | 'vatPercent' | 'rebatePercent' | 'lifelineWarningMarginKwh' | 'dayStartHour' | 'dayEndHour',
-  string
->;
+type Draft = Record<'demandChargeTkPerKw' | 'sanctionedLoadKw' | 'meterRentTk' | 'vatPercent' | 'rebatePercent', string>;
 
 function toDraft(settings: AppSettings): Draft {
   return {
@@ -13,9 +10,6 @@ function toDraft(settings: AppSettings): Draft {
     meterRentTk: String(settings.meterRentTk),
     vatPercent: String(settings.vatPercent),
     rebatePercent: String(settings.rebatePercent),
-    lifelineWarningMarginKwh: String(settings.lifelineWarningMarginKwh),
-    dayStartHour: String(settings.dayWindow.startHour),
-    dayEndHour: String(settings.dayWindow.endHour),
   };
 }
 
@@ -25,9 +19,6 @@ const FIELDS: { key: keyof Draft; label: string; step?: string }[] = [
   { key: 'meterRentTk', label: 'Meter rent (Tk/month)', step: '0.01' },
   { key: 'vatPercent', label: 'VAT (%)', step: '0.1' },
   { key: 'rebatePercent', label: 'Prepaid rebate (%)', step: '0.1' },
-  { key: 'lifelineWarningMarginKwh', label: 'Lifeline "at risk" margin (kWh)', step: '1' },
-  { key: 'dayStartHour', label: 'Day starts at (0-23)', step: '1' },
-  { key: 'dayEndHour', label: 'Night starts at (0-23)', step: '1' },
 ];
 
 export function FixedChargesForm({
@@ -48,8 +39,6 @@ export function FixedChargesForm({
       meterRentTk: Number(draft.meterRentTk),
       vatPercent: Number(draft.vatPercent),
       rebatePercent: Number(draft.rebatePercent),
-      lifelineWarningMarginKwh: Number(draft.lifelineWarningMarginKwh),
-      dayWindow: { startHour: Number(draft.dayStartHour), endHour: Number(draft.dayEndHour) },
     });
   }
 
