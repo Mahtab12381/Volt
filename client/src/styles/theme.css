@@ -1,0 +1,43 @@
+/* Dark-first theme. This app is dark-only by design (per user request), but
+   tokens are still named by role so a future light mode is a values swap. */
+:root {
+  color-scheme: dark;
+
+  /* chart chrome & ink (dataviz reference palette, dark column) */
+  --surface-1: #1a1a19;
+  --page-plane: #0d0d0d;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+  --gridline: #2c2c2a;
+  --baseline: #383835;
+  --border-hairline: rgba(255, 255, 255, 0.1);
+  --success-text: #0ca30c;
+
+  /* categorical series — fixed order, never reassigned */
+  --series-1: #3987e5; /* blue */
+  --series-2: #d95926; /* orange */
+  --series-3: #199e70; /* aqua */
+  --series-4: #c98500; /* yellow */
+  --series-5: #d55181; /* magenta */
+  --series-6: #008300; /* green */
+  --series-7: #9085e9; /* violet */
+  --series-8: #e66767; /* red */
+
+  /* sequential (single-hue blue ramp) */
+  --seq-100: #cde2fb;
+  --seq-250: #86b6ef;
+  --seq-400: #3987e5;
+  --seq-550: #1c5cab;
+  --seq-700: #0d366b;
+
+  /* status — reserved, never used as a data series color */
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+
+  /* surfaces for elevated cards / inputs */
+  --surface-2: #232322;
+  --surface-hover: #2a2a28;
+}
