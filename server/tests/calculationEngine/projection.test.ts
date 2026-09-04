@@ -9,7 +9,7 @@ const baseConfig = {
   sanctionedLoadKw: 1,
   meterRentTk: 40,
   vatPercent: 5,
-  rebatePercent: 0.5,
+  rebatePercent: 0.495,
 };
 
 describe('projectMonth', () => {
@@ -37,7 +37,7 @@ describe('projectMonth', () => {
     expect(result.energyCost).toBeCloseTo(70 * 5.26, 4);
   });
 
-  it('applies rebate, VAT, demand charge and meter rent to the final estimate', () => {
+  it('applies rebate (on energy + demand) and VAT (on energy + demand + meter rent, net of rebate) to the final estimate', () => {
     const result = projectMonth({
       cumulativeKwhSoFar: 5,
       recentDailyKwh: [1],
@@ -45,10 +45,11 @@ describe('projectMonth', () => {
       config: baseConfig,
     });
     const energyCost = 5 * 4.63;
-    const rebate = energyCost * 0.005;
-    const afterRebate = energyCost - rebate;
-    const vat = afterRebate * 0.05;
-    const expectedTotal = afterRebate + vat + 42 * 1 + 40;
+    const demandCharge = 42 * 1;
+    const rebate = (energyCost + demandCharge) * 0.00495;
+    const vatBase = energyCost + demandCharge + 40 - rebate;
+    const vat = vatBase * 0.05;
+    const expectedTotal = vatBase + vat;
     expect(result.totalEstimate).toBeCloseTo(expectedTotal, 6);
   });
 });

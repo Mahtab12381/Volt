@@ -47,11 +47,14 @@ export function projectMonth(params: {
       ? projectedTotalKwh * config.lifelineSlab.rateTkPerKwh
       : kwhToTkWithSlabs(0, projectedTotalKwh, config.standardSlabs);
 
-  const rebateAmount = energyCost * (config.rebatePercent / 100);
-  const energyAfterRebate = energyCost - rebateAmount;
-  const vatAmount = energyAfterRebate * (config.vatPercent / 100);
+  // Rebate applies to Energy + Demand Charge only (not Meter Rent); VAT then applies to the
+  // full Energy + Demand + Meter Rent base net of that rebate. Reverse-engineered from real
+  // DESCO recharge receipts — see rechargeAdjustment.ts, which inverts this same pipeline.
   const demandCharge = config.demandChargeTkPerKw * config.sanctionedLoadKw;
-  const totalEstimate = energyAfterRebate + vatAmount + demandCharge + config.meterRentTk;
+  const rebateAmount = (energyCost + demandCharge) * (config.rebatePercent / 100);
+  const vatBase = energyCost + demandCharge + config.meterRentTk - rebateAmount;
+  const vatAmount = vatBase * (config.vatPercent / 100);
+  const totalEstimate = vatBase + vatAmount;
 
   return {
     projectedTotalKwh,
