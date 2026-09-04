@@ -73,6 +73,21 @@ export function DashboardPage() {
             <KpiRow>
               <StatTile label="Current balance" value={formatTk(summary.data.currentBalanceTk)} />
               <StatTile
+                label="Average usage per day"
+                value={formatTk(summary.data.avgDailyTk)}
+                hint={`${formatKwh(summary.data.avgDailyKwh)}/day · rolling avg, last 7 days`}
+              />
+              <StatTile
+                label="Current tariff slab"
+                value={`${formatTk(summary.data.currentSlab.rateTkPerKwh)}/kWh`}
+                hint={
+                  summary.data.currentSlab.maxKwh === null
+                    ? `${summary.data.currentSlab.minKwh}+ kWh`
+                    : `${summary.data.currentSlab.minKwh}–${summary.data.currentSlab.maxKwh} kWh`
+                }
+                badge={summary.data.currentSlab.track === 'lifeline' ? { text: 'Lifeline rate', tone: 'good' } : undefined}
+              />
+              <StatTile
                 label="Projected tariff slab"
                 value={`${formatTk(summary.data.projectedSlab.rateTkPerKwh)}/kWh`}
                 hint={
@@ -82,46 +97,46 @@ export function DashboardPage() {
                 }
                 badge={summary.data.projectedSlab.track === 'lifeline' ? { text: 'Lifeline rate', tone: 'good' } : undefined}
               />
-              <StatTile
-                label="Projected month-end bill"
-                value={formatTk(summary.data.projectedMonthlyBillTk)}
-                hint={`~${formatKwh(summary.data.projectedMonthlyKwh)} total`}
-              />
-              <StatTile
-                label="Budget status"
-                value={
-                  summary.data.budgetStatus === 'not_set'
-                    ? 'No budget set'
-                    : summary.data.budgetStatus === 'over_budget'
-                      ? 'Over budget'
-                      : summary.data.budgetStatus === 'at_risk'
-                        ? 'At risk'
-                        : 'On track'
-                }
-                hint={
-                  summary.data.budgetStatus === 'not_set'
-                    ? 'Set one in Settings'
-                    : `${formatTk(summary.data.projectedMonthlyBillTk)} of ${formatTk(summary.data.monthlyBudgetTk)}`
-                }
-                badge={
-                  summary.data.budgetStatus === 'not_set'
-                    ? undefined
-                    : summary.data.budgetStatus === 'over_budget'
-                      ? { text: `${Math.round(summary.data.budgetUsedPercent ?? 0)}% of budget`, tone: 'critical' }
-                      : summary.data.budgetStatus === 'at_risk'
-                        ? { text: `${Math.round(summary.data.budgetUsedPercent ?? 0)}% of budget`, tone: 'warning' }
-                        : { text: `${Math.round(summary.data.budgetUsedPercent ?? 0)}% of budget`, tone: 'good' }
-                }
-              />
             </KpiRow>
           </div>
 
-          <div className="mb-8 max-w-xl">
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <UsageVsBudgetCard
               cumulativeTkThisMonth={summary.data.cumulativeTkThisMonth}
               cumulativeKwhThisMonth={summary.data.cumulativeKwhThisMonth}
               monthlyBudgetTk={summary.data.monthlyBudgetTk}
               budgetStatus={summary.data.budgetStatus}
+            />
+            <StatTile
+              label="Projected month-end bill"
+              value={formatTk(summary.data.projectedMonthlyBillTk)}
+              hint={`~${formatKwh(summary.data.projectedMonthlyKwh)} total`}
+            />
+            <StatTile
+              label="Budget status"
+              value={
+                summary.data.budgetStatus === 'not_set'
+                  ? 'No budget set'
+                  : summary.data.budgetStatus === 'over_budget'
+                    ? 'Over budget'
+                    : summary.data.budgetStatus === 'at_risk'
+                      ? 'At risk'
+                      : 'On track'
+              }
+              hint={
+                summary.data.budgetStatus === 'not_set'
+                  ? 'Set one in Settings'
+                  : `${formatTk(summary.data.projectedMonthlyBillTk)} of ${formatTk(summary.data.monthlyBudgetTk)}`
+              }
+              badge={
+                summary.data.budgetStatus === 'not_set'
+                  ? undefined
+                  : summary.data.budgetStatus === 'over_budget'
+                    ? { text: `${Math.round(summary.data.budgetUsedPercent ?? 0)}% of budget`, tone: 'critical' }
+                    : summary.data.budgetStatus === 'at_risk'
+                      ? { text: `${Math.round(summary.data.budgetUsedPercent ?? 0)}% of budget`, tone: 'warning' }
+                      : { text: `${Math.round(summary.data.budgetUsedPercent ?? 0)}% of budget`, tone: 'good' }
+              }
             />
           </div>
 

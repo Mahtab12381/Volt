@@ -16,6 +16,7 @@ export interface SummaryResponse {
   daysElapsed: number;
   daysRemaining: number;
   avgDailyKwh: number;
+  avgDailyTk: number; // same rolling window as avgDailyKwh
   estimatedDaysUntilExhaustion: number | null;
   monthlyBudgetTk: number; // 0 = no budget set
   budgetStatus: 'not_set' | 'on_track' | 'at_risk' | 'over_budget';
@@ -23,6 +24,10 @@ export interface SummaryResponse {
   // The slab your PROJECTED month-end kWh total would land in (not the slab
   // you're literally in right now) — consistent with projectedMonthlyBillTk.
   projectedSlab: SlabInfo;
+  // The slab your cumulative kWh so far this month actually falls into.
+  currentSlab: SlabInfo;
+  // Demand charge + meter rent — flat charges independent of kWh consumed.
+  totalFixedCostTk: number;
 }
 
 export interface HourlyBucket {

@@ -122,6 +122,7 @@ async function buildProjectionInput(monthKey: string) {
   const segments = await fetchSegments(monthStart, monthEnd);
   const byDay = sortedDaily(groupByDay(segments, settings.dayWindow));
   const recentDailyKwh = byDay.slice(-7).map((d) => d.kwh);
+  const recentDailyTk = byDay.slice(-7).map((d) => d.tk);
 
   const latestReading = await ReadingModel.findOne().sort({ timestamp: -1 }).lean();
   const daysInMonth = bdDaysInMonth(monthKey);
@@ -139,7 +140,7 @@ async function buildProjectionInput(monthKey: string) {
     rebatePercent: settings.rebatePercent,
   };
 
-  return { cumulativeKwhSoFar, recentDailyKwh, daysRemainingInMonth, daysElapsed, daysInMonth, config, state, byDay, settings };
+  return { cumulativeKwhSoFar, recentDailyKwh, recentDailyTk, daysRemainingInMonth, daysElapsed, daysInMonth, config, state, byDay, settings };
 }
 
 export type BudgetStatus = 'not_set' | 'on_track' | 'at_risk' | 'over_budget';
@@ -165,18 +166,19 @@ export async function getProjection(monthKey: string) {
 }
 
 export async function getSummary(monthKey: string) {
-  const { cumulativeKwhSoFar, recentDailyKwh, daysRemainingInMonth, daysElapsed, state, config, settings } =
+  const { cumulativeKwhSoFar, recentDailyKwh, recentDailyTk, daysRemainingInMonth, daysElapsed, state, config, settings } =
     await buildProjectionInput(monthKey);
 
   const projection = projectMonth({ cumulativeKwhSoFar, recentDailyKwh, daysRemainingInMonth, config });
   const latestReading = await ReadingModel.findOne().sort({ timestamp: -1 }).lean();
   const avgDailyKwh = recentDailyKwh.length > 0 ? recentDailyKwh.reduce((a, b) => a + b, 0) / recentDailyKwh.length : 0;
+  const avgDailyTk = recentDailyTk.length > 0 ? recentDailyTk.reduce((a, b) => a + b, 0) / recentDailyTk.length : 0;
 
   const cumulativeTkThisMonth = (await getMonthly()).find((m) => m.month === monthKey)?.tk ?? 0;
 
-  const avgDailyTk = daysElapsed > 0 ? cumulativeTkThisMonth / daysElapsed : 0;
+  const avgDailyTkMonthToDate = daysElapsed > 0 ? cumulativeTkThisMonth / daysElapsed : 0;
   const currentBalanceTk = latestReading?.balanceTk ?? 0;
-  const estimatedDaysUntilExhaustion = avgDailyTk > 0 ? currentBalanceTk / avgDailyTk : null;
+  const estimatedDaysUntilExhaustion = avgDailyTkMonthToDate > 0 ? currentBalanceTk / avgDailyTkMonthToDate : null;
 
   const { budgetStatus, budgetUsedPercent } = computeBudgetStatus(
     projection.totalEstimate,
@@ -195,21 +197,29 @@ export async function getSummary(monthKey: string) {
     config.standardSlabs,
   );
 
+  const lifelineEligible = state?.lifelineEligible ?? true;
+  const currentSlab = findCurrentSlab(cumulativeKwhSoFar, lifelineEligible, settings.lifelineSlab, config.standardSlabs);
+
+  const totalFixedCostTk = projection.demandCharge + projection.meterRent;
+
   return {
     currentBalanceTk,
     cumulativeKwhThisMonth: cumulativeKwhSoFar,
     cumulativeTkThisMonth,
     projectedMonthlyKwh: projection.projectedTotalKwh,
     projectedMonthlyBillTk: projection.totalEstimate,
-    lifelineEligible: state?.lifelineEligible ?? true,
+    lifelineEligible,
     daysElapsed,
     daysRemaining: daysRemainingInMonth,
     avgDailyKwh,
+    avgDailyTk,
     estimatedDaysUntilExhaustion,
     monthlyBudgetTk: settings.monthlyBudgetTk,
     budgetStatus,
     budgetUsedPercent,
     projectedSlab,
+    currentSlab,
+    totalFixedCostTk,
   };
 }
 
