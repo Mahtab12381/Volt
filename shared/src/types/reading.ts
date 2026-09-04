@@ -1,9 +1,15 @@
+// 'none' = rechargeAmountTk is already the net amount credited to balance.
+// 'vatRebate' = rechargeAmountTk is the gross amount paid; VAT/rebate (from Settings) are backed out.
+// 'all' = same as 'vatRebate', plus the monthly meter rent + demand charge are also backed out.
+export type RechargeAdjustment = 'none' | 'vatRebate' | 'all';
+
 export interface Reading {
   id: string;
   timestamp: string; // ISO 8601, UTC
   balanceTk: number;
   isRecharge: boolean;
   rechargeAmountTk: number | null;
+  rechargeAdjustment: RechargeAdjustment;
   isAutoDetectedRecharge: boolean;
   autoRechargeAmountTk: number | null;
   note: string | null;
@@ -16,6 +22,7 @@ export interface CreateReadingInput {
   balanceTk: number;
   isRecharge?: boolean;
   rechargeAmountTk?: number;
+  rechargeAdjustment?: RechargeAdjustment;
   note?: string;
 }
 

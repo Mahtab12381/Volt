@@ -29,6 +29,7 @@ async function loadRawReadings(): Promise<RawReading[]> {
     balanceTk: d.balanceTk,
     isRecharge: d.isRecharge,
     rechargeAmountTk: d.rechargeAmountTk ?? null,
+    rechargeAdjustment: d.rechargeAdjustment ?? 'none',
   }));
 }
 
@@ -45,6 +46,11 @@ export async function recalculateAll(): Promise<{ monthsRecalculated: string[] }
   const monthResults = recomputeAllMonths(readings, {
     lifelineSlab: settings.lifelineSlab,
     standardSlabs,
+    vatPercent: settings.vatPercent,
+    rebatePercent: settings.rebatePercent,
+    demandChargeTkPerKw: settings.demandChargeTkPerKw,
+    sanctionedLoadKw: settings.sanctionedLoadKw,
+    meterRentTk: settings.meterRentTk,
   });
 
   await DerivedIntervalModel.deleteMany({});

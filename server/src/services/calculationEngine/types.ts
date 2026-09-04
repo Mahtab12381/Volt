@@ -1,9 +1,23 @@
+export type RechargeAdjustment = 'none' | 'vatRebate' | 'all';
+
 export interface RawReading {
   id: string;
   timestamp: Date;
   balanceTk: number;
   isRecharge: boolean;
   rechargeAmountTk: number | null;
+  rechargeAdjustment: RechargeAdjustment;
+}
+
+// The subset of AppSettings needed to back a gross recharge payment out to
+// the net amount actually credited to the balance — the inverse of the
+// energyCost -> rebate -> VAT -> +fixed pipeline in projection.ts.
+export interface RechargeAdjustmentSettings {
+  vatPercent: number;
+  rebatePercent: number;
+  demandChargeTkPerKw: number;
+  sanctionedLoadKw: number;
+  meterRentTk: number;
 }
 
 export interface SlabBand {

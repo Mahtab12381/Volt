@@ -1,4 +1,5 @@
 import { detectRechargeAndConsumption } from './rechargeDetection.js';
+import { computeNetRechargeCredit } from './rechargeAdjustment.js';
 import { tkToKwhWithSlabs } from './slabConversion.js';
 import { bdMonthKey, bdMonthStartUtc } from './time.js';
 import type {
@@ -6,12 +7,33 @@ import type {
   LifelineSlabConfig,
   MonthRecomputeResult,
   RawReading,
+  RechargeAdjustmentSettings,
+  RechargeDetectionResult,
   SlabBand,
   SlabSegmentResult,
   TimedSlabSegment,
 } from './types.js';
 
 const EPSILON = 1e-9;
+
+export interface EngineConfig extends RechargeAdjustmentSettings {
+  lifelineSlab: LifelineSlabConfig;
+  standardSlabs: SlabBand[];
+}
+
+/** Same as detectRechargeAndConsumption, but first backs a gross recharge out to its net balance credit per the reading's rechargeAdjustment mode. */
+function detectAdjusted(prevBalanceTk: number, curr: RawReading, settings: RechargeAdjustmentSettings): RechargeDetectionResult {
+  const effectiveAmount =
+    curr.isRecharge && (curr.rechargeAdjustment === 'vatRebate' || curr.rechargeAdjustment === 'all') && curr.rechargeAmountTk !== null
+      ? computeNetRechargeCredit(curr.rechargeAmountTk, curr.rechargeAdjustment, settings)
+      : curr.rechargeAmountTk;
+
+  return detectRechargeAndConsumption(prevBalanceTk, {
+    balanceTk: curr.balanceTk,
+    isRecharge: curr.isRecharge,
+    rechargeAmountTk: effectiveAmount,
+  });
+}
 
 /**
  * Splits readings into per-calendar-month groups (Bangladesh wall clock).
@@ -62,6 +84,7 @@ export function partitionReadingsByMonth(readings: RawReading[]): Map<string, Ra
         balanceTk: interpolatedBalance,
         isRecharge: false,
         rechargeAmountTk: null,
+        rechargeAdjustment: 'none',
       };
 
       pushTo(cursorMonth, virtual);
@@ -100,18 +123,15 @@ function buildLifelineLabel(config: LifelineSlabConfig): string {
   return `0-${config.thresholdKwh} (lifeline)`;
 }
 
-function tryLifelinePass(
-  readings: RawReading[],
-  lifelineSlab: LifelineSlabConfig,
-  month: string,
-): MonthRecomputeResult | null {
+function tryLifelinePass(readings: RawReading[], config: EngineConfig, month: string): MonthRecomputeResult | null {
+  const lifelineSlab = config.lifelineSlab;
   let cumulative = 0;
   const intervals: IntervalResult[] = [];
 
   for (let i = 1; i < readings.length; i++) {
     const prev = readings[i - 1];
     const curr = readings[i];
-    const r = detectRechargeAndConsumption(prev.balanceTk, curr);
+    const r = detectAdjusted(prev.balanceTk, curr, config);
 
     let kwh = 0;
     let segments: SlabSegmentResult[] = [];
@@ -155,12 +175,13 @@ function tryLifelinePass(
   return { intervals, cumulativeKwh: cumulative, lifelineEligible: true, reclassifiedAt: null };
 }
 
-function findLifelineCrossingTimestamp(readings: RawReading[], lifelineSlab: LifelineSlabConfig): Date | null {
+function findLifelineCrossingTimestamp(readings: RawReading[], config: EngineConfig): Date | null {
+  const lifelineSlab = config.lifelineSlab;
   let cumulative = 0;
   for (let i = 1; i < readings.length; i++) {
     const prev = readings[i - 1];
     const curr = readings[i];
-    const r = detectRechargeAndConsumption(prev.balanceTk, curr);
+    const r = detectAdjusted(prev.balanceTk, curr, config);
     if (r.tkConsumed <= EPSILON) continue;
     const kwh = r.tkConsumed / lifelineSlab.rateTkPerKwh;
     if (cumulative + kwh > lifelineSlab.thresholdKwh + EPSILON) {
@@ -174,16 +195,16 @@ function findLifelineCrossingTimestamp(readings: RawReading[], lifelineSlab: Lif
   return null;
 }
 
-function standardPass(readings: RawReading[], standardSlabs: SlabBand[], month: string): MonthRecomputeResult {
+function standardPass(readings: RawReading[], config: EngineConfig, month: string): MonthRecomputeResult {
   let cumulative = 0;
   const intervals: IntervalResult[] = [];
 
   for (let i = 1; i < readings.length; i++) {
     const prev = readings[i - 1];
     const curr = readings[i];
-    const r = detectRechargeAndConsumption(prev.balanceTk, curr);
+    const r = detectAdjusted(prev.balanceTk, curr, config);
 
-    const conv = tkToKwhWithSlabs(cumulative, r.tkConsumed, standardSlabs);
+    const conv = tkToKwhWithSlabs(cumulative, r.tkConsumed, config.standardSlabs);
     cumulative = conv.endCumulativeKwh;
 
     intervals.push({
@@ -207,30 +228,23 @@ function standardPass(readings: RawReading[], standardSlabs: SlabBand[], month: 
 }
 
 /** Recomputes one calendar month's intervals under the two-pass lifeline/standard rule. */
-export function recomputeMonth(
-  monthReadings: RawReading[],
-  month: string,
-  config: { lifelineSlab: LifelineSlabConfig; standardSlabs: SlabBand[] },
-): MonthRecomputeResult {
+export function recomputeMonth(monthReadings: RawReading[], month: string, config: EngineConfig): MonthRecomputeResult {
   const sorted = [...monthReadings].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
   if (sorted.length < 2) {
     return { intervals: [], cumulativeKwh: 0, lifelineEligible: true, reclassifiedAt: null };
   }
 
-  const lifelineResult = tryLifelinePass(sorted, config.lifelineSlab, month);
+  const lifelineResult = tryLifelinePass(sorted, config, month);
   if (lifelineResult) return lifelineResult;
 
-  const reclassifiedAt = findLifelineCrossingTimestamp(sorted, config.lifelineSlab);
-  const standardResult = standardPass(sorted, config.standardSlabs, month);
+  const reclassifiedAt = findLifelineCrossingTimestamp(sorted, config);
+  const standardResult = standardPass(sorted, config, month);
   return { ...standardResult, reclassifiedAt };
 }
 
 /** Recomputes every month present in the given readings. Virtual reading ids (prefixed "virtual-") are not persisted as their own Reading documents. */
-export function recomputeAllMonths(
-  readings: RawReading[],
-  config: { lifelineSlab: LifelineSlabConfig; standardSlabs: SlabBand[] },
-): Map<string, MonthRecomputeResult> {
+export function recomputeAllMonths(readings: RawReading[], config: EngineConfig): Map<string, MonthRecomputeResult> {
   const groups = partitionReadingsByMonth(readings);
   const results = new Map<string, MonthRecomputeResult>();
   for (const [month, monthReadings] of groups) {

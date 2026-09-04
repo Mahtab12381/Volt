@@ -9,6 +9,7 @@ const createReadingSchema = z.object({
   balanceTk: z.number(),
   isRecharge: z.boolean().optional(),
   rechargeAmountTk: z.number().positive().optional(),
+  rechargeAdjustment: z.enum(['none', 'vatRebate', 'all']).optional(),
   note: z.string().optional(),
 });
 
@@ -29,6 +30,7 @@ export async function createReading(req: Request, res: Response) {
     balanceTk: input.balanceTk,
     isRecharge: input.isRecharge ?? false,
     rechargeAmountTk: input.rechargeAmountTk ?? null,
+    rechargeAdjustment: input.isRecharge ? (input.rechargeAdjustment ?? 'none') : 'none',
     note: input.note ?? null,
   });
 
@@ -80,6 +82,7 @@ export async function updateReading(req: Request, res: Response) {
   if (input.balanceTk !== undefined) update.balanceTk = input.balanceTk;
   if (input.isRecharge !== undefined) update.isRecharge = input.isRecharge;
   if (input.rechargeAmountTk !== undefined) update.rechargeAmountTk = input.rechargeAmountTk;
+  if (input.rechargeAdjustment !== undefined) update.rechargeAdjustment = input.rechargeAdjustment;
   if (input.note !== undefined) update.note = input.note;
 
   const reading = await ReadingModel.findByIdAndUpdate(req.params.id, update, { new: true }).lean();

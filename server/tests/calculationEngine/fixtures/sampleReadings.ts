@@ -8,15 +8,25 @@ export function bd(y: number, m: number, d: number, h: number, mi: number): Date
 
 /** The user's real September 2026 meter readings (first 3 days). */
 export const SAMPLE_READINGS: RawReading[] = [
-  { id: 'r1', timestamp: bd(2026, 9, 1, 6, 40), balanceTk: 1875.89, isRecharge: false, rechargeAmountTk: null },
-  { id: 'r2', timestamp: bd(2026, 9, 1, 18, 50), balanceTk: 1869.36, isRecharge: false, rechargeAmountTk: null },
-  { id: 'r3', timestamp: bd(2026, 9, 2, 6, 48), balanceTk: 1845.1, isRecharge: false, rechargeAmountTk: null },
-  { id: 'r4', timestamp: bd(2026, 9, 2, 23, 1), balanceTk: 1835.47, isRecharge: false, rechargeAmountTk: null },
-  { id: 'r5', timestamp: bd(2026, 9, 3, 6, 48), balanceTk: 1822.09, isRecharge: false, rechargeAmountTk: null },
-  { id: 'r6', timestamp: bd(2026, 9, 3, 18, 50), balanceTk: 1814.73, isRecharge: false, rechargeAmountTk: null },
+  { id: 'r1', timestamp: bd(2026, 9, 1, 6, 40), balanceTk: 1875.89, isRecharge: false, rechargeAmountTk: null, rechargeAdjustment: 'none' },
+  { id: 'r2', timestamp: bd(2026, 9, 1, 18, 50), balanceTk: 1869.36, isRecharge: false, rechargeAmountTk: null, rechargeAdjustment: 'none' },
+  { id: 'r3', timestamp: bd(2026, 9, 2, 6, 48), balanceTk: 1845.1, isRecharge: false, rechargeAmountTk: null, rechargeAdjustment: 'none' },
+  { id: 'r4', timestamp: bd(2026, 9, 2, 23, 1), balanceTk: 1835.47, isRecharge: false, rechargeAmountTk: null, rechargeAdjustment: 'none' },
+  { id: 'r5', timestamp: bd(2026, 9, 3, 6, 48), balanceTk: 1822.09, isRecharge: false, rechargeAmountTk: null, rechargeAdjustment: 'none' },
+  { id: 'r6', timestamp: bd(2026, 9, 3, 18, 50), balanceTk: 1814.73, isRecharge: false, rechargeAmountTk: null, rechargeAdjustment: 'none' },
 ];
 
 export const LIFELINE_SLAB = { thresholdKwh: 50, rateTkPerKwh: 4.63 };
+
+// rebatePercent is 0.495, not the Settings-page default of 0.5 — reverse-engineered from two
+// real DESCO recharge receipts (see rechargeAdjustment.test.ts) rather than assumed.
+export const RECHARGE_SETTINGS = {
+  vatPercent: 5,
+  rebatePercent: 0.495,
+  demandChargeTkPerKw: 42,
+  sanctionedLoadKw: 4,
+  meterRentTk: 40,
+};
 
 export const STANDARD_SLABS = [
   { minKwh: 0, maxKwh: 75, rateTkPerKwh: 5.26, label: '0-75' },

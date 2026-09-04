@@ -6,6 +6,7 @@ const readingSchema = new Schema(
     balanceTk: { type: Number, required: true },
     isRecharge: { type: Boolean, default: false },
     rechargeAmountTk: { type: Number, default: null },
+    rechargeAdjustment: { type: String, enum: ['none', 'vatRebate', 'all'], default: 'none' },
     isAutoDetectedRecharge: { type: Boolean, default: false },
     autoRechargeAmountTk: { type: Number, default: null },
     note: { type: String, default: null },
