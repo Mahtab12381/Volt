@@ -1,0 +1,14 @@
+name: Keep Render server awake
+
+on:
+  schedule:
+    # Every 10 minutes — comfortably inside Render's 15-minute free-tier spin-down window.
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /health
+        run: curl --fail --silent --show-error --max-time 30 --retry 2 https://electricity-bill-server.onrender.com/health
