@@ -12,7 +12,14 @@ import {
 } from './calculationEngine/intervalSplitter.js';
 import { findCurrentSlab, kwhToTkWithSlabs } from './calculationEngine/slabConversion.js';
 import { projectMonth } from './calculationEngine/projection.js';
-import { bdDateKey, bdDayOfMonth, bdDaysInMonth, bdMonthKey } from './calculationEngine/time.js';
+import {
+  bdDateKey,
+  bdDayOfMonth,
+  bdDaysInMonth,
+  bdMonthEndExclusiveUtc,
+  bdMonthKey,
+  bdMonthStartUtc,
+} from './calculationEngine/time.js';
 import type { AtomicSegment } from './calculationEngine/types.js';
 
 async function fetchSegments(from?: Date, to?: Date): Promise<AtomicSegment[]> {
@@ -116,11 +123,12 @@ async function buildProjectionInput(monthKey: string) {
   const state = await MonthlyStateModel.findOne({ month: monthKey }).lean();
   const cumulativeKwhSoFar = state?.cumulativeKwh ?? 0;
 
-  const [y, m] = monthKey.split('-').map(Number);
-  const monthStart = new Date(Date.UTC(y, m - 1, 1));
-  const monthEnd = new Date(Date.UTC(y, m, 1));
-  const segments = await fetchSegments(monthStart, monthEnd);
-  const byDay = sortedDaily(groupByDay(segments, settings.dayWindow));
+  const segments = await fetchSegments(bdMonthStartUtc(monthKey), bdMonthEndExclusiveUtc(monthKey));
+  // fetchSegments returns any *overlapping* interval whole, so an interval
+  // straddling a month boundary drags a neighbouring day in with it. Drop those:
+  // they would otherwise show up as a stray day on the trend chart and, worse,
+  // land in the trailing-7-day average as a partial day.
+  const byDay = sortedDaily(groupByDay(segments, settings.dayWindow)).filter((d) => d.date.startsWith(`${monthKey}-`));
   const recentDailyKwh = byDay.slice(-7).map((d) => d.kwh);
   const recentDailyTk = byDay.slice(-7).map((d) => d.tk);
 
