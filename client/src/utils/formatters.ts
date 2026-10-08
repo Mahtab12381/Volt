@@ -54,3 +54,37 @@ export function bdDateTimeLocalToIso(value: string): string {
 export function nowAsBdDateTimeLocal(): string {
   return isoToBdDateTimeLocal(new Date().toISOString());
 }
+
+/** The calendar month Bangladesh is currently in, as a `YYYY-MM` key. */
+export function currentBdMonthKey(): string {
+  const shifted = new Date(Date.now() + BD_OFFSET_MS);
+  return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Formats a `YYYY-MM` key as e.g. "October 2026". */
+export function formatMonth(monthKey: string): string {
+  const [y, m] = monthKey.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+/**
+ * The UTC instants bounding a Bangladesh calendar month, as ISO strings for the
+ * analytics `from`/`to` params. `to` is the last millisecond of the month, so it
+ * works for both the inclusive (balance series) and exclusive (segments) filters.
+ */
+export function bdMonthRangeIso(monthKey: string): { from: string; to: string } {
+  const [y, m] = monthKey.split('-').map(Number);
+  return {
+    from: new Date(Date.UTC(y, m - 1, 1) - BD_OFFSET_MS).toISOString(),
+    to: new Date(Date.UTC(y, m, 1) - BD_OFFSET_MS - 1).toISOString(),
+  };
+}
+
+/** Formats a day-of-month block (two `YYYY-MM-DD` bounds in the same month) as e.g. "1–7". */
+export function formatDayRange(startDateKey: string, endDateKey: string): string {
+  return `${Number(startDateKey.slice(8))}–${Number(endDateKey.slice(8))}`;
+}

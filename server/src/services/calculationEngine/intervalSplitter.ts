@@ -1,7 +1,7 @@
 import {
   bdDateKey,
+  bdDaysInMonth,
   bdHour,
-  bdIsoWeekStartUtc,
   bdMonthKey,
   isBdDaytime,
   nextBdDayNightBoundaryUtc,
@@ -117,16 +117,37 @@ export interface WeeklyAgg {
   tk: number;
 }
 
+const WEEK_BLOCK_DAYS = 7;
+
+/**
+ * Buckets into fixed day-of-month blocks — 1–7, 8–14, 15–21, 22–28, then the
+ * 29th onward — rather than ISO weeks. ISO weeks straddle month boundaries, so
+ * on a month-scoped dashboard the first bar would carry the previous month's
+ * date as its label. These blocks always sit wholly inside one month, and the
+ * final one is short (2–3 days) since months aren't multiples of seven.
+ */
 export function groupByWeek(segments: AtomicSegment[]): Map<string, WeeklyAgg> {
   const weeks = new Map<string, WeeklyAgg>();
   for (const seg of segments) {
-    const weekStartDate = bdIsoWeekStartUtc(seg.fromTimestamp);
-    const key = bdDateKey(weekStartDate);
-    const weekEndDate = new Date(weekStartDate.getTime() + 6 * 24 * 60 * 60 * 1000);
-    const existing = weeks.get(key) ?? { weekStart: key, weekEnd: bdDateKey(weekEndDate), kwh: 0, tk: 0 };
-    existing.kwh += seg.kwh;
-    existing.tk += seg.tk;
-    weeks.set(key, existing);
+    // Split at midnight first so a segment spanning a block boundary is
+    // apportioned across both, keeping these bars summing to the daily ones.
+    for (const piece of splitAtMidnight(seg)) {
+      const [year, month, day] = bdDateKey(piece.fromTimestamp).split('-').map(Number);
+      const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+      const startDay = Math.floor((day - 1) / WEEK_BLOCK_DAYS) * WEEK_BLOCK_DAYS + 1;
+      const endDay = Math.min(startDay + WEEK_BLOCK_DAYS - 1, bdDaysInMonth(monthKey));
+
+      const key = `${monthKey}-${String(startDay).padStart(2, '0')}`;
+      const existing = weeks.get(key) ?? {
+        weekStart: key,
+        weekEnd: `${monthKey}-${String(endDay).padStart(2, '0')}`,
+        kwh: 0,
+        tk: 0,
+      };
+      existing.kwh += piece.kwh;
+      existing.tk += piece.tk;
+      weeks.set(key, existing);
+    }
   }
   return weeks;
 }
