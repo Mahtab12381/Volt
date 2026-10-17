@@ -7,6 +7,7 @@ const readingSchema = new Schema(
     isRecharge: { type: Boolean, default: false },
     rechargeAmountTk: { type: Number, default: null },
     rechargeAdjustment: { type: String, enum: ['none', 'vatRebate', 'all'], default: 'none' },
+    rechargeFixedChargeMonths: { type: Number, default: 1, min: 1 },
     isAutoDetectedRecharge: { type: Boolean, default: false },
     autoRechargeAmountTk: { type: Number, default: null },
     note: { type: String, default: null },

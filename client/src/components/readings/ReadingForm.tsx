@@ -10,6 +10,7 @@ export interface ReadingFormValues {
   isRecharge: boolean;
   rechargeAmountTk: string;
   rechargeAdjustment: RechargeAdjustment;
+  fixedChargeMonths: string;
   note: string;
 }
 
@@ -19,6 +20,7 @@ export interface ReadingFormInitial {
   isRecharge?: boolean;
   rechargeAmountTk?: number | null;
   rechargeAdjustment?: RechargeAdjustment;
+  rechargeFixedChargeMonths?: number;
   note?: string | null;
 }
 
@@ -29,6 +31,7 @@ function toFormValues(input?: ReadingFormInitial): ReadingFormValues {
     isRecharge: input?.isRecharge ?? false,
     rechargeAmountTk: input?.rechargeAmountTk !== undefined && input?.rechargeAmountTk !== null ? String(input.rechargeAmountTk) : '',
     rechargeAdjustment: input?.rechargeAdjustment ?? 'none',
+    fixedChargeMonths: String(input?.rechargeFixedChargeMonths ?? 1),
     note: input?.note ?? '',
   };
 }
@@ -39,10 +42,12 @@ function previewNetCredit(
   grossTk: number,
   mode: RechargeAdjustment,
   settings: { vatPercent: number; rebatePercent: number; demandChargeTkPerKw: number; sanctionedLoadKw: number; meterRentTk: number },
+  fixedChargeMonths = 1,
 ): number {
   if (mode === 'none') return grossTk;
-  const demandCharge = mode === 'all' ? settings.demandChargeTkPerKw * settings.sanctionedLoadKw : 0;
-  const meterRent = mode === 'all' ? settings.meterRentTk : 0;
+  const months = mode === 'all' ? Math.max(1, fixedChargeMonths) : 0;
+  const demandCharge = settings.demandChargeTkPerKw * settings.sanctionedLoadKw * months;
+  const meterRent = settings.meterRentTk * months;
   const v = settings.vatPercent / 100;
   const r = settings.rebatePercent / 100;
   if (r >= 1) return grossTk / (1 + v) - meterRent - demandCharge;
@@ -63,6 +68,7 @@ export function ReadingForm({
   isSubmitting?: boolean;
 }) {
   const [values, setValues] = useState<ReadingFormValues>(() => toFormValues(initial));
+  const fixedChargeMonths = Math.max(1, Math.round(Number(values.fixedChargeMonths) || 1));
   const [error, setError] = useState<string | null>(null);
   const settings = useSettings();
   const summary = useSummary();
@@ -78,10 +84,10 @@ export function ReadingForm({
     if (Number.isNaN(grossTk) || grossTk <= 0) return;
     if (!settings.data || !summary.data) return;
 
-    const netCredit = previewNetCredit(grossTk, values.rechargeAdjustment, settings.data);
+    const netCredit = previewNetCredit(grossTk, values.rechargeAdjustment, settings.data, fixedChargeMonths);
     const newBalance = summary.data.currentBalanceTk + netCredit;
     setValues((v) => ({ ...v, balanceTk: newBalance.toFixed(2) }));
-  }, [initial, values.isRecharge, values.rechargeAmountTk, values.rechargeAdjustment, settings.data, summary.data]);
+  }, [initial, values.isRecharge, values.rechargeAmountTk, values.rechargeAdjustment, fixedChargeMonths, settings.data, summary.data]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -103,6 +109,7 @@ export function ReadingForm({
       isRecharge: values.isRecharge,
       rechargeAmountTk: values.isRecharge ? Number(values.rechargeAmountTk) : undefined,
       rechargeAdjustment: values.isRecharge ? values.rechargeAdjustment : undefined,
+      rechargeFixedChargeMonths: values.isRecharge && values.rechargeAdjustment === 'all' ? fixedChargeMonths : undefined,
       note: values.note || undefined,
     });
   }
@@ -110,7 +117,7 @@ export function ReadingForm({
   const grossTk = Number(values.rechargeAmountTk);
   const hasValidRecharge = values.isRecharge && !Number.isNaN(grossTk) && grossTk > 0;
   const showPreview = hasValidRecharge && values.rechargeAdjustment !== 'none' && settings.data;
-  const netCredit = showPreview && settings.data ? previewNetCredit(grossTk, values.rechargeAdjustment, settings.data) : null;
+  const netCredit = showPreview && settings.data ? previewNetCredit(grossTk, values.rechargeAdjustment, settings.data, fixedChargeMonths) : null;
   const autoFilledBalance = !initial && hasValidRecharge && !!settings.data && !!summary.data;
 
   return (
@@ -189,8 +196,28 @@ export function ReadingForm({
                 onChange={(e) => setValues((v) => ({ ...v, rechargeAdjustment: e.target.checked ? 'all' : 'none' }))}
                 className="h-4 w-4 rounded border-border-hairline accent-[var(--series-1)]"
               />
-              Deduct VAT, rebate &amp; this month's meter rent + demand charge
+              Deduct VAT, rebate &amp; the meter rent + demand charge on the receipt
             </label>
+
+            {values.rechargeAdjustment === 'all' && (
+              <label className="flex flex-wrap items-center gap-2 pl-6 text-sm text-ink-secondary">
+                Months of fixed charges on this receipt
+                <input
+                  type="number"
+                  min="1"
+                  max="24"
+                  step="1"
+                  value={values.fixedChargeMonths}
+                  onChange={(e) => setValues((v) => ({ ...v, fixedChargeMonths: e.target.value }))}
+                  className="w-20 rounded-lg border border-border-hairline bg-[var(--surface-1)] px-2 py-1 text-ink-primary tabular-nums outline-none focus:border-[var(--series-1)]"
+                />
+                {settings.data && (
+                  <span className="text-xs text-ink-muted">
+                    = {formatTk((settings.data.demandChargeTkPerKw * settings.data.sanctionedLoadKw + settings.data.meterRentTk) * fixedChargeMonths)} deducted
+                  </span>
+                )}
+              </label>
+            )}
 
             {netCredit !== null && (
               <p className="text-xs text-ink-secondary">

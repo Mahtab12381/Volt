@@ -19,16 +19,22 @@ import type { RechargeAdjustment, RechargeAdjustmentSettings } from './types.js'
  * 'vatRebate' mode is the same formula with demandCharge = meterRent = 0 (this
  * particular recharge didn't carry the periodic fixed-charge deduction), which
  * collapses to energyCost = gross / [(1 - rebatePercent%) * (1 + vatPercent%)].
+ *
+ * A recharge made after one or more skipped months settles the arrears in one
+ * go: the receipt then shows both fixed charges multiplied by the number of
+ * months covered, so 'all' scales them by fixedChargeMonths.
  */
 export function computeNetRechargeCredit(
   grossTk: number,
   mode: RechargeAdjustment,
   settings: RechargeAdjustmentSettings,
+  fixedChargeMonths = 1,
 ): number {
   if (mode === 'none') return grossTk;
 
-  const demandCharge = mode === 'all' ? settings.demandChargeTkPerKw * settings.sanctionedLoadKw : 0;
-  const meterRent = mode === 'all' ? settings.meterRentTk : 0;
+  const months = mode === 'all' ? Math.max(1, fixedChargeMonths) : 0;
+  const demandCharge = settings.demandChargeTkPerKw * settings.sanctionedLoadKw * months;
+  const meterRent = settings.meterRentTk * months;
 
   const v = settings.vatPercent / 100;
   const r = settings.rebatePercent / 100;

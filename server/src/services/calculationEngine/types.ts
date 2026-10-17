@@ -7,6 +7,8 @@ export interface RawReading {
   isRecharge: boolean;
   rechargeAmountTk: number | null;
   rechargeAdjustment: RechargeAdjustment;
+  /** Months of meter rent + demand charge this recharge paid for (mode 'all' only); defaults to 1. */
+  rechargeFixedChargeMonths?: number;
 }
 
 // The subset of AppSettings needed to back a gross recharge payment out to

@@ -25,7 +25,7 @@ export interface EngineConfig extends RechargeAdjustmentSettings {
 function detectAdjusted(prevBalanceTk: number, curr: RawReading, settings: RechargeAdjustmentSettings): RechargeDetectionResult {
   const effectiveAmount =
     curr.isRecharge && (curr.rechargeAdjustment === 'vatRebate' || curr.rechargeAdjustment === 'all') && curr.rechargeAmountTk !== null
-      ? computeNetRechargeCredit(curr.rechargeAmountTk, curr.rechargeAdjustment, settings)
+      ? computeNetRechargeCredit(curr.rechargeAmountTk, curr.rechargeAdjustment, settings, curr.rechargeFixedChargeMonths)
       : curr.rechargeAmountTk;
 
   return detectRechargeAndConsumption(prevBalanceTk, {

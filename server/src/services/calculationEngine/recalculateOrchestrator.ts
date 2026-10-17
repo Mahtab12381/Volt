@@ -30,6 +30,7 @@ async function loadRawReadings(): Promise<RawReading[]> {
     isRecharge: d.isRecharge,
     rechargeAmountTk: d.rechargeAmountTk ?? null,
     rechargeAdjustment: d.rechargeAdjustment ?? 'none',
+    rechargeFixedChargeMonths: d.rechargeFixedChargeMonths ?? 1,
   }));
 }
 

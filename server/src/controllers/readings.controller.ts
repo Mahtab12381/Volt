@@ -10,6 +10,7 @@ const createReadingSchema = z.object({
   isRecharge: z.boolean().optional(),
   rechargeAmountTk: z.number().positive().optional(),
   rechargeAdjustment: z.enum(['none', 'vatRebate', 'all']).optional(),
+  rechargeFixedChargeMonths: z.number().int().min(1).max(24).optional(),
   note: z.string().optional(),
 });
 
@@ -31,6 +32,8 @@ export async function createReading(req: Request, res: Response) {
     isRecharge: input.isRecharge ?? false,
     rechargeAmountTk: input.rechargeAmountTk ?? null,
     rechargeAdjustment: input.isRecharge ? (input.rechargeAdjustment ?? 'none') : 'none',
+    rechargeFixedChargeMonths:
+      input.isRecharge && input.rechargeAdjustment === 'all' ? (input.rechargeFixedChargeMonths ?? 1) : 1,
     note: input.note ?? null,
   });
 
@@ -83,6 +86,10 @@ export async function updateReading(req: Request, res: Response) {
   if (input.isRecharge !== undefined) update.isRecharge = input.isRecharge;
   if (input.rechargeAmountTk !== undefined) update.rechargeAmountTk = input.rechargeAmountTk;
   if (input.rechargeAdjustment !== undefined) update.rechargeAdjustment = input.rechargeAdjustment;
+  if (input.rechargeFixedChargeMonths !== undefined) update.rechargeFixedChargeMonths = input.rechargeFixedChargeMonths;
+  // A mode that doesn't deduct fixed charges can't carry a month count — reset it so an
+  // 'all' reading edited back down to 'vatRebate'/'none' doesn't keep a stale 2 on file.
+  if (input.rechargeAdjustment !== undefined && input.rechargeAdjustment !== 'all') update.rechargeFixedChargeMonths = 1;
   if (input.note !== undefined) update.note = input.note;
 
   const reading = await ReadingModel.findByIdAndUpdate(req.params.id, update, { new: true }).lean();

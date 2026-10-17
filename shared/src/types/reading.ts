@@ -3,6 +3,11 @@
 // 'all' = same as 'vatRebate', plus the monthly meter rent + demand charge are also backed out.
 export type RechargeAdjustment = 'none' | 'vatRebate' | 'all';
 
+// How many months of meter rent + demand charge a single recharge paid for. A
+// recharge made after a skipped month carries both fixed charges twice, so 'all'
+// has to know the count. Only meaningful for 'all'; always 1 for the other modes.
+export const DEFAULT_FIXED_CHARGE_MONTHS = 1;
+
 export interface Reading {
   id: string;
   timestamp: string; // ISO 8601, UTC
@@ -10,6 +15,7 @@ export interface Reading {
   isRecharge: boolean;
   rechargeAmountTk: number | null;
   rechargeAdjustment: RechargeAdjustment;
+  rechargeFixedChargeMonths: number;
   isAutoDetectedRecharge: boolean;
   autoRechargeAmountTk: number | null;
   note: string | null;
@@ -23,6 +29,7 @@ export interface CreateReadingInput {
   isRecharge?: boolean;
   rechargeAmountTk?: number;
   rechargeAdjustment?: RechargeAdjustment;
+  rechargeFixedChargeMonths?: number;
   note?: string;
 }
 
